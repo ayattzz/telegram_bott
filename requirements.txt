@@ -1,0 +1,13 @@
+asyncio
+logging
+os
+python-telegram-bot==20.0
+deep-translator
+smtplib
+email
+re
+requests
+fastapi
+nest-asyncio
+hmac
+hashlib
