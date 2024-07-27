@@ -2,7 +2,6 @@ asyncio
 logging
 python-telegram-bot==20.0
 deep-translator
-re
 requests
 fastapi
 nest-asyncio
