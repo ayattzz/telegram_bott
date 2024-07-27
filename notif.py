@@ -10,10 +10,20 @@ from telegram import Bot
 from main import logger
 
 app = FastAPI()
+import os
+from dotenv import load_dotenv
 
-SECRET_KEY = "+GAtFHo4O763z0DJL5e0055rjFOLMEo9"  # Set this to your NOWPayments secret key
-BOT_TOKEN = "7351033518:AAFBkj3rwQB3K3ir0rdRxWjKXox__Y38vLA"
-GROUP_ID = -1002240963009
+# Load environment variables from .env file
+load_dotenv()
+
+ADMINS = os.getenv("ADMINS")
+GROUP_ID = os.getenv("GROUP_ID")
+FROM_EMAIL = os.getenv("FROM_EMAIL")
+FROM_PASSWORD = os.getenv("FROM_PASSWORD")
+API_KEY = os.getenv("API_KEY")
+API_URL = os.getenv("API_URL")
+SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 def get_user_id_by_order_id(order_id):
     conn = sqlite3.connect('users.db')
@@ -27,8 +37,8 @@ def get_user_id_by_order_id(order_id):
         raise HTTPException(status_code=404, detail="User not found")
 
 def send_email(to_email, subject, body):
-    from_email = "Mohmedtrades@gmail.com"
-    from_password = "efyc cjjm rvzi oecd"
+    from_email = FROM_EMAIL
+    from_password = FROM_PASSWORD
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = from_email

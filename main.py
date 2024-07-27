@@ -18,8 +18,21 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-ADMINS = [6859433960]
-group_id = -1002240963009
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+
+ADMINS = os.getenv("ADMINS")
+group_id = os.getenv("GROUP_ID")
+FROM_EMAIL = os.getenv("FROM_EMAIL")
+FROM_PASSWORD = os.getenv("FROM_PASSWORD")
+API_KEY = os.getenv("API_KEY")
+API_URL = os.getenv("API_URL")
+SECRET_KEY = os.getenv("SECRET_KEY")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 EMAIL, PHONE, WAITING_FOR_RECEIPT = range(3)
 
@@ -75,8 +88,8 @@ def validate_phone(phone):
 # Function to send email
 
 def send_email(to_email, subject, body):
-    from_email = "Mohmedtrades@gmail.com"
-    from_password = "efyc cjjm rvzi oecd"
+    from_email = FROM_EMAIL
+    from_password = FROM_PASSWORD
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = from_email
@@ -494,8 +507,7 @@ import requests
 from telegram import Update
 from telegram.ext import CallbackContext
 
-API_KEY = "RP12NHF-5K945TP-HFCA3DN-8T9AT2A"
-API_URL = "https://api.nowpayments.io/v1/invoice"
+
 
 async def pay(update: Update, context: CallbackContext) -> None:
     user_id = update.callback_query.from_user.id if update.callback_query else update.message.from_user.id
@@ -887,7 +899,7 @@ nest_asyncio.apply()
 async def main():
 
     application = Application.builder().token(
-        "7351033518:AAFBkj3rwQB3K3ir0rdRxWjKXox__Y38vLA").build()  # Replace with your bot token
+        BOT_TOKEN).build()  # Replace with your bot token
 
     # Define command handlers
     application.add_handler(CommandHandler("start", start))
