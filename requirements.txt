@@ -6,5 +6,4 @@ requests
 fastapi
 nest-asyncio
 hmac
-hashlib
 python-dotenv
