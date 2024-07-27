@@ -8,35 +8,35 @@ import sqlite3
 #     conn.close()
 #
 # # Update user 1 to be subscribed
-# update_subscription( 1695689621, False)
+# update_subscription( 6859433960, False)
 
 
 import sqlite3
 
-
-def delete_users(user_ids):
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-
-    # Execute the DELETE statement for each user_id
-    for user_id in user_ids:
-        c.execute("DELETE FROM users WHERE user_id=?", (user_id,))
-
-        # Check if any row was deleted
-        if c.rowcount == 0:
-            print(f"No user found with user_id: {user_id}")
-        else:
-            print(f"User with user_id: {user_id} has been deleted.")
-
-    # Commit the transaction
-    conn.commit()
-
-    # Close the connection
-    conn.close()
-
-
-# Example usage
-delete_users([1189526633])
+#
+# def delete_users(user_ids):
+#     conn = sqlite3.connect('users.db')
+#     c = conn.cursor()
+#
+#     # Execute the DELETE statement for each user_id
+#     for user_id in user_ids:
+#         c.execute("DELETE FROM users WHERE user_id=?", (user_id,))
+#
+#         # Check if any row was deleted
+#         if c.rowcount == 0:
+#             print(f"No user found with user_id: {user_id}")
+#         else:
+#             print(f"User with user_id: {user_id} has been deleted.")
+#
+#     # Commit the transaction
+#     conn.commit()
+#
+#     # Close the connection
+#     conn.close()
+#
+#
+# # Example usage
+# delete_users([6859433960])
 
 
 

@@ -27,8 +27,8 @@ def get_user_id_by_order_id(order_id):
         raise HTTPException(status_code=404, detail="User not found")
 
 def send_email(to_email, subject, body):
-    from_email = "ayazerouki1@gmail.com"
-    from_password = "tivz ydaa tzcz epka"
+    from_email = "Mohmedtrades@gmail.com"
+    from_password = "efyc cjjm rvzi oecd"
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = from_email

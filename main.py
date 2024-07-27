@@ -18,7 +18,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-ADMINS = [1695689621]
+ADMINS = [6859433960]
 group_id = -1002240963009
 
 EMAIL, PHONE, WAITING_FOR_RECEIPT = range(3)
@@ -75,8 +75,8 @@ def validate_phone(phone):
 # Function to send email
 
 def send_email(to_email, subject, body):
-    from_email = "ayazerouki1@gmail.com"
-    from_password = "tivz ydaa tzcz epka"
+    from_email = "Mohmedtrades@gmail.com"
+    from_password = "efyc cjjm rvzi oecd"
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = from_email
@@ -212,9 +212,12 @@ async def check_and_ban_unsubscribed_users(bot: Bot, group_id: int):
             logger.error(f"Date parsing error for user_id {user_id}: {e}")
 
 
+invite_links = {}
+
 async def generate_invite_link(bot: Bot, group_id: int) -> str:
     try:
         invite_link = await bot.export_chat_invite_link(chat_id=group_id)
+        invite_links[group_id] = invite_link  # Store the invite link
         return invite_link
     except Exception as e:
         logger.error(f"Failed to generate invite link for group {group_id}: {e}")
@@ -222,7 +225,6 @@ async def generate_invite_link(bot: Bot, group_id: int) -> str:
 
 async def check_invite_link_validity(bot: Bot, invite_link: str) -> bool:
     try:
-        # Attempt to get chat information to check if the invite link is valid
         chat = await bot.get_chat(chat_id=invite_link)
         return chat is not None
     except Exception as e:
@@ -241,19 +243,24 @@ async def unban_user_from_group(bot: Bot, user_id: int, group_id: int):
 async def notify_user_with_invite_link(bot: Bot, user_id: int, invite_link: str):
     try:
         if invite_link:
-            await bot.send_message(chat_id=user_id, text=f"لقد تم فك حظرك من محموعة VIP: يمكنك اعادة الدخول من خلال هذا الرابط {invite_link}")
+            await bot.send_message(chat_id=user_id, text=f"لقد تم فك حظرك من مجموعة VIP: يمكنك إعادة الدخول من خلال هذا الرابط {invite_link}")
         else:
-            await bot.send_message(chat_id=user_id, text="لقد تم فك حظرك من محموعة VIP: ولكن هناك مشكلة في توليد رابط الدعوة الجديد.")
+            await bot.send_message(chat_id=user_id, text="لقد تم فك حظرك من مجموعة VIP: ولكن هناك مشكلة في توليد رابط الدعوة الجديد.")
     except Exception as e:
         logger.error(f"Failed to notify user {user_id} with invite link: {e}")
 
 async def handle_user_unban(bot: Bot, group_id: int, user_id: int):
     await unban_user_from_group(bot, user_id, group_id)
-    invite_link = await generate_invite_link(bot, group_id)
+
+    # Check if we already have a valid invite link stored
+    invite_link = invite_links.get(group_id)
     if invite_link:
         valid = await check_invite_link_validity(bot, invite_link)
         if not valid:
             invite_link = await generate_invite_link(bot, group_id)
+    else:
+        invite_link = await generate_invite_link(bot, group_id)
+
     await notify_user_with_invite_link(bot, user_id, invite_link)
 
 async def check_and_unban_subscribed_users(bot: Bot, group_id: int):
@@ -269,7 +276,7 @@ async def check_and_unban_subscribed_users(bot: Bot, group_id: int):
 
 async def subscription_check_loop(bot: Bot, group_id: int):
     while True:
-        await check_and_ban_unsubscribed_users(bot, group_id)
+        await check_and_ban_unsubscribed_users(bot, group_id)  # Ensure to define this function
         await check_and_unban_subscribed_users(bot, group_id)
         await asyncio.sleep(3600)
 
@@ -494,7 +501,7 @@ async def pay(update: Update, context: CallbackContext) -> None:
     user_id = update.callback_query.from_user.id if update.callback_query else update.message.from_user.id
     user_lang = user_languages.get(user_id, 'en')
 
-    # Retrieve user details from the database
+
     try:
         conn = sqlite3.connect('users.db')
         c = conn.cursor()
@@ -516,7 +523,7 @@ async def pay(update: Update, context: CallbackContext) -> None:
         }
 
         payload = {
-            "price_amount": 10.0,
+            "price_amount": 37.0,
             "price_currency": "usdttrc20",
             "pay_currency": "usdttrc20",
             "order_id": user_id,
@@ -552,7 +559,7 @@ async def pay(update: Update, context: CallbackContext) -> None:
 
 
 
-# Function to check if a user is registered
+
 def is_user_registered(user_id: int) -> bool:
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
@@ -579,7 +586,7 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [
             InlineKeyboardButton("Crypto Payment", callback_data='pay'),
-            InlineKeyboardButton("CCP", callback_data='send')
+            InlineKeyboardButton("BaridiMob", callback_data='send')
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -597,7 +604,7 @@ async def send(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     message = (
         "Thank you for choosing to subscribe to Live VIP Room! \n"
         "Please make a payment to the following account: \n"
-        "Baridi Mob 0000000000000. \n"
+        "BaridiMob: 00799999002405340925 \n"
         "Once you have completed the transaction, please send us a photo of the receipt.\n"
     )
     translated_message = translate_text(message, user_languages[user_id])
@@ -631,16 +638,16 @@ async def handle_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 os.makedirs(receipts_dir)
             photo_path = os.path.join(receipts_dir, f'{update.message.from_user.id}.jpg')
 
-            # Download the photo file
+
             await photo_file.download_to_drive(photo_path)
 
-            # Notify the user
+
             message = "Thank you! Your receipt has been received. Check your email in the next few days for confirmation."
             translated_message = translate_text(message, user_languages[user_id])
             await update.message.reply_text(translated_message)
             logger.info(f"Receipt from user {update.message.from_user.id} saved to {photo_path}")
 
-            # Retrieve user data from the database
+
             conn = db_connect()
             c = conn.cursor()
             c.execute("SELECT email, phone FROM users WHERE user_id = ?", (update.message.from_user.id,))
@@ -653,7 +660,7 @@ async def handle_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 email = "Unknown"
                 phone = "Unknown"
 
-            # Send the photo to admins with additional user info
+
             for admin_id in ADMINS:
                 try:
                     with open(photo_path, 'rb') as photo:
@@ -708,7 +715,7 @@ async def verify_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if status == "approve":
         invite_link = await generate_invite_link(context.bot, group_id)
-        update_subscription(target_user_id, True)  # Call to update_subscription
+        update_subscription(target_user_id, True)
         email = user[0]
         send_email(email, "Subscription Confirmation",
                    f"Your subscription has been confirmed. Welcome to the Live VIP Room! ")
@@ -758,10 +765,10 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             subscription_status = "Inactive. Please subscribe to access services."
 
-        # Determine user language for translation
-        user_lang = user_languages.get(user_id, 'en')  # Default to 'en' if not set
 
-        # Translate messages
+        user_lang = user_languages.get(user_id, 'en')
+
+
         free_trial_message_translated = translate_text(free_trial_message, user_lang)
         subscription_status_translated = translate_text(subscription_status, user_lang)
 
@@ -769,7 +776,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             f"{free_trial_message_translated}\n\n{subscription_status_translated}"
         )
     else:
-        user_lang = user_languages.get(user_id, 'en')  # Default to 'en' if not set
+        user_lang = user_languages.get(user_id, 'en')
         not_registered_message = "You are not registered. Please use /register to start the registration process."
         not_registered_message_translated = translate_text(not_registered_message, user_lang)
         await update.message.reply_text(not_registered_message_translated)
@@ -780,7 +787,7 @@ async def admin_send(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text('You are not authorized to use this command.')
         return
 
-    # Check if there is a message content provided or media attached
+
     if len(context.args) == 0 and not update.message.voice and not update.message.document and not update.message.video:
         await update.message.reply_text('Please provide the message content or attach a media file.')
         return
@@ -824,11 +831,9 @@ async def admin_send(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 
-# Define conversation states
-HELP_REQUEST = range(1)
-  # Replace with your personal chat ID obtained
 
-# Function to start the help request
+HELP_REQUEST = range(1)
+
 async def help_request(update: Update, context: CallbackContext) -> int:
     default_message = "Please describe your problem or question."
     user_id = update.message.from_user.id
@@ -847,18 +852,18 @@ async def handle_help_request(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
     user_message = update.message.text
 
-    # Retrieve the user's phone number from the database
+
     c.execute("SELECT phone FROM users WHERE user_id = ?", (user_id,))
     result = c.fetchone()
     phone_number = result[0] if result else "Not provided"
     if phone_number.startswith('0'):
         phone_number = '+213' + phone_number[1:]
 
-    # Forward the user's message to your personal chat
+
     support_message = f"User ID: {user_id}\nPhone Number: {phone_number}\nMessage: {user_message}"
     await context.bot.send_message(chat_id='1695689621', text=support_message)
 
-    # Acknowledge receipt to the user in their preferred language
+
     default_acknowledgement = "Thank you for reaching out! Our support team will respond to you via your Telegram account."
     user_lang = user_languages.get(user_id, 'en')
     translated_acknowledgement = translate_text(default_acknowledgement, user_lang)
@@ -874,14 +879,13 @@ async def reminder_check_loop(bot):
         await send_subscription_reminders(bot)
         check_subscription_expiration()
         check_trial_expiration()
-        # Attends 1 heure avant de recommencer la boucle
         await asyncio.sleep(3600)
 
 
-# Apply the nest_asyncio patch
+
 nest_asyncio.apply()
 async def main():
-    # Initialize the bot application
+
     application = Application.builder().token(
         "7351033518:AAFBkj3rwQB3K3ir0rdRxWjKXox__Y38vLA").build()  # Replace with your bot token
 
@@ -897,8 +901,8 @@ async def main():
             PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, phone)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
-        per_user=True,  # Make sure each user has their own conversation handler instance
-        per_chat=True,  # Make sure each chat has its own conversation handler instance
+        per_user=True,
+        per_chat=True,
     )
 
     conversation_handler = ConversationHandler(
