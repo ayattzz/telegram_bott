@@ -907,13 +907,18 @@ WEBHOOK_URL = f"{os.environ['RENDER_EXTERNAL_URL']}/webhook"  # Render URL
 
 app = FastAPI()
 
-application = Application.builder().token(BOT_TOKEN).build()  # Replace with your bot token
+# Root URL route
+@app.get("/")
+async def root():
+    return {"message": "Hello, this is your FastAPI app running!"}
 
 @app.post("/webhook")
 async def webhook(request: Request):
     update = Update.de_json(await request.json(), application.bot)
     await application.process_update(update)
     return {"message": "Webhook received"}
+
+application = Application.builder().token(BOT_TOKEN).build()  # Replace with your bot token
 
 async def main():
     # Define command handlers
@@ -963,4 +968,3 @@ async def main():
 if __name__ == '__main__':
     asyncio.run(main())
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
