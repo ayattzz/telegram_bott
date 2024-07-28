@@ -717,9 +717,12 @@ async def handle_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     return ConversationHandler.END
 
 
+
 async def verify_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
-    if user_id not in ADMINS:
+
+    # Check if user_id matches the admin ID directly
+    if user_id != ADMINS:
         message = "You are not authorized to use this command."
         translated_message = translate_text(message, user_languages.get(user_id, 'en'))
         await update.message.reply_text(translated_message)
@@ -750,7 +753,7 @@ async def verify_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         update_subscription(target_user_id, True)
         email = user[0]
         send_email(email, "Subscription Confirmation",
-                   f"Your subscription has been confirmed. Welcome to the Live VIP Room! ")
+                   f"Your subscription has been confirmed. Welcome to the Live VIP Room!")
         message = f"User {target_user_id} has been approved and notified via email."
         translated_message = translate_text(message, user_languages.get(user_id, 'en'))
         await update.message.reply_text(translated_message)
@@ -815,17 +818,20 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def admin_send(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
-    if user_id not in ADMINS:
+
+    # Check if user_id matches the admin ID directly
+    if user_id != ADMINS:
         await update.message.reply_text('You are not authorized to use this command.')
         return
 
-
+    # Check for message content or media attachment
     if len(context.args) == 0 and not update.message.voice and not update.message.document and not update.message.video:
         await update.message.reply_text('Please provide the message content or attach a media file.')
         return
 
     message_content = ' '.join(context.args)
 
+    # Determine the type of media file
     if update.message.voice:
         voice_file = await update.message.voice.get_file()
         media_file = voice_file.file_path
@@ -842,12 +848,14 @@ async def admin_send(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         media_file = None
         media_type = None
 
+    # Retrieve subscribed users from the database
     conn = db_connect()
     c = conn.cursor()
     c.execute("SELECT user_id FROM users WHERE subscribed = 1")
     subscribed_users = c.fetchall()
     conn.close()
 
+    # Send message or media to each subscribed user
     for user in subscribed_users:
         try:
             if media_type == 'voice':
@@ -860,6 +868,7 @@ async def admin_send(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
                 await context.bot.send_message(chat_id=user[0], text=message_content)
         except Exception as e:
             logger.error(f"Failed to send message to user {user[0]}: {e}")
+
 
 
 
@@ -911,7 +920,7 @@ async def reminder_check_loop(bot):
         await send_subscription_reminders(bot)
         check_subscription_expiration()
         check_trial_expiration()
-        await asyncio.sleep(3600)
+        await asyncio.sleep(86400)
 
 
 import os
