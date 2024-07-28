@@ -914,10 +914,6 @@ async def reminder_check_loop(bot):
 
 
 
-async def handle(request):
-    return web.Response(text="Bot is running")
-
-
 import os
 import nest_asyncio
 import asyncio
