@@ -913,29 +913,30 @@ async def reminder_check_loop(bot):
         await asyncio.sleep(3600)
 
 
-nest_asyncio.apply()
-from aiohttp import web
 
 async def handle(request):
     return web.Response(text="Bot is running")
 
 
 import os
+import nest_asyncio
 import asyncio
 from aiohttp import web
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ConversationHandler, filters
 
+# Apply nest_asyncio
+nest_asyncio.apply()
 
 # Define your handler functions and ConversationHandler states
 # e.g., start, register, email, phone, etc.
+
 
 async def init_app():
     app = web.Application()
     app.router.add_get('/', lambda request: web.Response(text="Bot is running"))
     return app
 
-
-async def main():
+async def start_application():
     application = Application.builder().token(BOT_TOKEN).build()  # Replace with your bot token
 
     # Define your handlers
@@ -954,21 +955,11 @@ async def main():
         per_chat=True,
     )
 
-    conversation_handler = ConversationHandler(
-        entry_points=[CommandHandler('help', help_request)],
-        states={
-            HELP_REQUEST: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_help_request)],
-        },
-        fallbacks=[],
-    )
-    application.add_handler(conversation_handler)
-
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("send", send))
     application.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, handle_receipt))
     application.add_handler(registration_conv_handler)
     application.add_handler(CommandHandler("verify", verify_receipt))
-    # application.add_handler(CommandHandler("qr", send_qr))
     application.add_handler(CommandHandler("pay", pay))
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("setlang", set_language))
@@ -987,18 +978,23 @@ async def main():
     bot = application.bot
 
     # Create asynchronous tasks
-    asyncio.create_task(subscription_check_loop(bot, group_id))
+    asyncio.create_task(subscription_check_loop(bot, group_id))  # Replace group_id with your group ID
     asyncio.create_task(reminder_check_loop(bot))
 
-    # Run the bot polling
-    await application.run_polling()
+    polling_task = asyncio.create_task(application.run_polling())
+    return application, polling_task
 
+async def main():
+    application, polling_task = await start_application()
+    try:
+        await polling_task
+    except RuntimeError as e:
+        if str(e) != "This Application is already running!":
+            raise
+    finally:
+        # Graceful shutdown
+        await application.stop()
+        await application.shutdown()
 
 if __name__ == '__main__':
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:  # No running event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    loop.run_until_complete(main())
+    asyncio.run(main())
