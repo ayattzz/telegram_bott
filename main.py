@@ -924,9 +924,24 @@ async def init_app():
     app.router.add_get('/', handle)
     return app
 
+import os
+import asyncio
+from aiohttp import web
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ConversationHandler
+
+# Define your handler functions and ConversationHandler states
+# e.g., start, register, email, phone, etc.
+
+async def init_app():
+    app = web.Application()
+    # You can add more routes or configurations here if needed
+    app.router.add_get('/', lambda request: web.Response(text="Bot is running"))
+    return app
+
 async def main():
     application = Application.builder().token(BOT_TOKEN).build()  # Replace with your bot token
 
+    # Define your handlers
     application.add_handler(CommandHandler("start", start))
     registration_conv_handler = ConversationHandler(
         entry_points=[CommandHandler("register", register)],
@@ -952,7 +967,6 @@ async def main():
     application.add_handler(conversation_handler)
 
     application.add_handler(CommandHandler("status", status))
-
     application.add_handler(CommandHandler("send", send))
     application.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, handle_receipt))
     application.add_handler(registration_conv_handler)
@@ -964,18 +978,15 @@ async def main():
     application.add_handler(CommandHandler("admin_send", admin_send))
     application.add_handler(CallbackQueryHandler(button))
 
-    # Start the HTTP server on port 8080
+    # Start the HTTP server on port specified by the PORT environment variable
+    port = int(os.environ.get('PORT', 8000))
     app = await init_app()
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 8080)
+    site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
 
-    # Add bot handlers and start polling
-    bot = application.bot
-    asyncio.create_task(subscription_check_loop(bot, group_id))
-    asyncio.create_task(reminder_check_loop(bot))
-
+    # Start the bot polling
     await application.run_polling()
 
 if __name__ == '__main__':
