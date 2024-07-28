@@ -957,6 +957,7 @@ async def main():
     asyncio.create_task(subscription_check_loop(bot, group_id))
     asyncio.create_task(reminder_check_loop(bot))
 
+    application.initialize()  # Initialize the application
     await bot.set_webhook(WEBHOOK_URL)  # Set webhook for bot
 
 if __name__ == '__main__':
