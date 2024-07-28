@@ -5,6 +5,9 @@ from datetime import datetime, timedelta, date
 import re
 import smtplib
 from email.mime.text import MIMEText
+
+import uvicorn
+from fastapi import FastAPI
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from deep_translator import GoogleTranslator
@@ -896,8 +899,16 @@ async def reminder_check_loop(bot):
 
 
 nest_asyncio.apply()
-async def main():
 
+app = FastAPI()
+
+# Your FastAPI webhook endpoint
+@app.post("/webbhook")
+async def webhook():
+    # Your webhook handling code
+    return {"message": "Webhook received"}
+
+async def main():
     application = Application.builder().token(
         BOT_TOKEN).build()  # Replace with your bot token
 
@@ -926,31 +937,19 @@ async def main():
     )
     application.add_handler(conversation_handler)
 
-
-
     application.add_handler(CommandHandler("status", status))
-
     application.add_handler(CommandHandler("send", send))
     application.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, handle_receipt))
     application.add_handler(registration_conv_handler)
     application.add_handler(CommandHandler("verify", verify_receipt))
-    # application.add_handler(CommandHandler("qr", send_qr))
     application.add_handler(CommandHandler("pay", pay))
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("setlang", set_language))
     application.add_handler(CommandHandler("admin_send", admin_send))
     application.add_handler(CallbackQueryHandler(button))
 
-    # check_subscription_expiration()
-    # check_trial_expiration()
-
     bot = application.bot
 
-    # Start reminder functions
-    # await send_trial_reminders(bot)
-    # await send_subscription_reminders(bot)
-
-    # Run periodic checks
     asyncio.create_task(subscription_check_loop(bot, group_id))
     asyncio.create_task(reminder_check_loop(bot))
 
@@ -962,3 +961,7 @@ if __name__ == '__main__':
         loop.run_until_complete(main())
     else:
         asyncio.create_task(main())
+
+    # Run FastAPI app with uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
