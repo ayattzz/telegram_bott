@@ -6,8 +6,10 @@ import re
 import smtplib
 from email.mime.text import MIMEText
 
+
+
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI ,Request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from deep_translator import GoogleTranslator
@@ -15,6 +17,20 @@ from telegram import Update, Bot, InputFile
 from telegram.error import TelegramError, BadRequest
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, \
     CallbackContext
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+app = FastAPI()
+application = Application.builder().token(BOT_TOKEN).build()
+
+@app.get("/")
+async def root():
+    return {"message": "Bot is running"}
+
+@app.post("/webhook")
+async def webhook(request: Request):
+    update = Update.de_json(await request.json(), application.bot)
+    await application.process_update(update)
+    return {"status": "ok"}
 
 
 
@@ -35,7 +51,7 @@ FROM_PASSWORD = os.getenv("FROM_PASSWORD")
 API_KEY = os.getenv("API_KEY")
 API_URL = os.getenv("API_URL")
 SECRET_KEY = os.getenv("SECRET_KEY")
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+
 
 EMAIL, PHONE, WAITING_FOR_RECEIPT = range(3)
 
@@ -542,8 +558,7 @@ async def pay(update: Update, context: CallbackContext) -> None:
             "price_currency": "usdttrc20",
             "pay_currency": "usdttrc20",
             "order_id": user_id,
-            "order_description": "Payment for user registration",
-            "ipn_callback_url": "http://192.168.1.9:8000/webhook"
+            "order_description": "Payment for user registration"
         }
 
         try:
