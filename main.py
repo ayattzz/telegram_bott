@@ -897,36 +897,12 @@ async def reminder_check_loop(bot):
         await asyncio.sleep(3600)
 
 
-
-import os
-import uvicorn
-import asyncio
-import nest_asyncio
-from fastapi import FastAPI, Request
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ConversationHandler, MessageHandler, filters, CallbackQueryHandler
-
 nest_asyncio.apply()
-
-
-WEBHOOK_URL = f"{os.getenv('RENDER_EXTERNAL_URL')}/webhook"  # Render URL
-
-app = FastAPI()
-
-# Root URL route
-@app.get("/")
-async def root():
-    return {"message": "Hello, this is your FastAPI app running!"}
-
-@app.post("/webhook")
-async def webhook(request: Request):
-    update = Update.de_json(await request.json(), application.bot)
-    await application.process_update(update)
-    return {"message": "Webhook received"}
-
-application = Application.builder().token(BOT_TOKEN).build()  # Replace with your bot token
-
 async def main():
+
+    application = Application.builder().token(
+        BOT_TOKEN).build()  # Replace with your bot token
+
     # Define command handlers
     application.add_handler(CommandHandler("start", start))
     registration_conv_handler = ConversationHandler(
@@ -952,29 +928,39 @@ async def main():
     )
     application.add_handler(conversation_handler)
 
+
+
     application.add_handler(CommandHandler("status", status))
+
     application.add_handler(CommandHandler("send", send))
     application.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, handle_receipt))
     application.add_handler(registration_conv_handler)
     application.add_handler(CommandHandler("verify", verify_receipt))
+    # application.add_handler(CommandHandler("qr", send_qr))
     application.add_handler(CommandHandler("pay", pay))
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("setlang", set_language))
     application.add_handler(CommandHandler("admin_send", admin_send))
     application.add_handler(CallbackQueryHandler(button))
 
-    # Initialize the application
-    application.initialize()
+    # check_subscription_expiration()
+    # check_trial_expiration()
 
-    # Create async tasks for subscription checks and reminders
-    asyncio.create_task(subscription_check_loop(application.bot, group_id))
-    asyncio.create_task(reminder_check_loop(application.bot))
+    bot = application.bot
 
-    # Set webhook for the bot
-    await application.bot.set_webhook(WEBHOOK_URL)
+    # Start reminder functions
+    # await send_trial_reminders(bot)
+    # await send_subscription_reminders(bot)
+
+    # Run periodic checks
+    asyncio.create_task(subscription_check_loop(bot, group_id))
+    asyncio.create_task(reminder_check_loop(bot))
+
+    await application.run_polling()
 
 if __name__ == '__main__':
-    port = int(os.getenv("PORT", 8000))
-    logging.info(f"Starting server on port {port}")
-    asyncio.run(main())
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    loop = asyncio.get_event_loop()
+    if not loop.is_running():
+        loop.run_until_complete(main())
+    else:
+        asyncio.create_task(main())
