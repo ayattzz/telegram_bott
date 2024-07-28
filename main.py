@@ -900,8 +900,8 @@ async def reminder_check_loop(bot):
 
 nest_asyncio.apply()
 
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-WEBHOOK_URL = f"https://{os.environ['RENDER_EXTERNAL_URL']}/webhook"  # Render URL
+
+WEBHOOK_URL = f"{os.environ['RENDER_EXTERNAL_URL']}/webhook"  # Render URL
 
 app = FastAPI()
 
