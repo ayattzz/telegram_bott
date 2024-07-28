@@ -919,18 +919,24 @@ from aiohttp import web
 async def handle(request):
     return web.Response(text="Bot is running")
 
+
 import os
 import asyncio
 from aiohttp import web
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ConversationHandler, filters
+
+
+# Define your handler functions and ConversationHandler states
+# e.g., start, register, email, phone, etc.
 
 async def init_app():
     app = web.Application()
     app.router.add_get('/', lambda request: web.Response(text="Bot is running"))
     return app
 
+
 async def main():
-    application = Application.builder().token(BOT_TOKEN).build()
+    application = Application.builder().token(BOT_TOKEN).build()  # Replace with your bot token
 
     # Define your handlers
     application.add_handler(CommandHandler("start", start))
@@ -987,6 +993,12 @@ async def main():
     # Run the bot polling
     await application.run_polling()
 
+
 if __name__ == '__main__':
-    # Use asyncio.run to handle the event loop management
-    asyncio.run(main())
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:  # No running event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(main())
