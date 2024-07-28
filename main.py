@@ -558,7 +558,8 @@ async def pay(update: Update, context: CallbackContext) -> None:
             "price_currency": "usdttrc20",
             "pay_currency": "usdttrc20",
             "order_id": user_id,
-            "order_description": "Payment for user registration"
+            "order_description": "Payment for user registration",
+            "ipn_callback_url": "http://192.168.1.9:8000/webhook"
         }
 
         try:
@@ -913,12 +914,19 @@ async def reminder_check_loop(bot):
 
 
 nest_asyncio.apply()
+from aiohttp import web
+
+async def handle(request):
+    return web.Response(text="Bot is running")
+
+async def init_app():
+    app = web.Application()
+    app.router.add_get('/', handle)
+    return app
+
 async def main():
+    application = Application.builder().token(BOT_TOKEN).build()  # Replace with your bot token
 
-    application = Application.builder().token(
-        BOT_TOKEN).build()  # Replace with your bot token
-
-    # Define command handlers
     application.add_handler(CommandHandler("start", start))
     registration_conv_handler = ConversationHandler(
         entry_points=[CommandHandler("register", register)],
@@ -943,8 +951,6 @@ async def main():
     )
     application.add_handler(conversation_handler)
 
-
-
     application.add_handler(CommandHandler("status", status))
 
     application.add_handler(CommandHandler("send", send))
@@ -958,16 +964,15 @@ async def main():
     application.add_handler(CommandHandler("admin_send", admin_send))
     application.add_handler(CallbackQueryHandler(button))
 
-    # check_subscription_expiration()
-    # check_trial_expiration()
+    # Start the HTTP server on port 8080
+    app = await init_app()
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 8080)
+    await site.start()
 
+    # Add bot handlers and start polling
     bot = application.bot
-
-    # Start reminder functions
-    # await send_trial_reminders(bot)
-    # await send_subscription_reminders(bot)
-
-    # Run periodic checks
     asyncio.create_task(subscription_check_loop(bot, group_id))
     asyncio.create_task(reminder_check_loop(bot))
 
