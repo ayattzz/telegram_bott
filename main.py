@@ -900,8 +900,10 @@ async def reminder_check_loop(bot):
 
 nest_asyncio.apply()
 
-
+from fastapi import FastAPI, Request
 WEBHOOK_URL = f"{os.environ['RENDER_EXTERNAL_URL']}/webhook"  # Render URL
+
+
 
 app = FastAPI()
 
