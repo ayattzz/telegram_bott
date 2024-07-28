@@ -908,7 +908,7 @@ async def webhook():
     # Your webhook handling code
     return {"message": "Webhook received"}
 
-async def main():
+async def start_bot():
     application = Application.builder().token(
         BOT_TOKEN).build()  # Replace with your bot token
 
@@ -955,13 +955,18 @@ async def main():
 
     await application.run_polling()
 
+async def start_webserver():
+    port = int(os.environ.get("PORT", 8000))
+    config = uvicorn.Config(app, host="0.0.0.0", port=port)
+    server = uvicorn.Server(config)
+    await server.serve()
+
+async def main():
+    await asyncio.gather(start_bot(), start_webserver())
+
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     if not loop.is_running():
         loop.run_until_complete(main())
     else:
         asyncio.create_task(main())
-
-    # Run FastAPI app with uvicorn
-port = int(os.environ.get("PORT", 8000))
-uvicorn.run(app, host="0.0.0.0", port=port)
