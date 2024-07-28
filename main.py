@@ -900,18 +900,20 @@ async def reminder_check_loop(bot):
 
 nest_asyncio.apply()
 
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+WEBHOOK_URL = f"https://{os.environ['RENDER_EXTERNAL_URL']}/webhook"  # Render URL
+
 app = FastAPI()
 
-# Your FastAPI webhook endpoint
+application = Application.builder().token(BOT_TOKEN).build()  # Replace with your bot token
+
 @app.post("/webhook")
-async def webhook():
-    # Your webhook handling code
+async def webhook(request: Request):
+    update = Update.de_json(await request.json(), application.bot)
+    await application.process_update(update)
     return {"message": "Webhook received"}
 
-async def start_bot():
-    application = Application.builder().token(
-        BOT_TOKEN).build()  # Replace with your bot token
-
+async def main():
     # Define command handlers
     application.add_handler(CommandHandler("start", start))
     registration_conv_handler = ConversationHandler(
@@ -953,20 +955,9 @@ async def start_bot():
     asyncio.create_task(subscription_check_loop(bot, group_id))
     asyncio.create_task(reminder_check_loop(bot))
 
-    await application.run_polling()
-
-async def start_webserver():
-    port = int(os.environ.get("PORT", 8000))
-    config = uvicorn.Config(app, host="0.0.0.0", port=port)
-    server = uvicorn.Server(config)
-    await server.serve()
-
-async def main():
-    await asyncio.gather(start_bot(), start_webserver())
+    await bot.set_webhook(WEBHOOK_URL)  # Set webhook for bot
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    if not loop.is_running():
-        loop.run_until_complete(main())
-    else:
-        asyncio.create_task(main())
+    asyncio.run(main())
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
