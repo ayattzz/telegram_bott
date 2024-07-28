@@ -934,7 +934,6 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 
 async def init_app():
     app = web.Application()
-    # You can add more routes or configurations here if needed
     app.router.add_get('/', lambda request: web.Response(text="Bot is running"))
     return app
 
@@ -990,8 +989,5 @@ async def main():
     await application.run_polling()
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    if not loop.is_running():
-        loop.run_until_complete(main())
-    else:
-        asyncio.create_task(main())
+    # Use asyncio.run to handle the event loop management
+    asyncio.run(main())
