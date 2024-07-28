@@ -903,7 +903,7 @@ nest_asyncio.apply()
 app = FastAPI()
 
 # Your FastAPI webhook endpoint
-@app.post("/webbhook")
+@app.post("/webhook")
 async def webhook():
     # Your webhook handling code
     return {"message": "Webhook received"}
@@ -963,5 +963,5 @@ if __name__ == '__main__':
         asyncio.create_task(main())
 
     # Run FastAPI app with uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+port = int(os.environ.get("PORT", 8000))
+uvicorn.run(app, host="0.0.0.0", port=port)
