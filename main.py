@@ -898,12 +898,18 @@ async def reminder_check_loop(bot):
 
 
 
+import os
+import uvicorn
+import asyncio
+import nest_asyncio
+from fastapi import FastAPI, Request
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ConversationHandler, MessageHandler, filters, CallbackQueryHandler
+
 nest_asyncio.apply()
 
-from fastapi import FastAPI, Request
-WEBHOOK_URL = f"{os.environ['RENDER_EXTERNAL_URL']}/webhook"  # Render URL
 
-
+WEBHOOK_URL = f"{os.getenv('RENDER_EXTERNAL_URL')}/webhook"  # Render URL
 
 app = FastAPI()
 
@@ -957,15 +963,18 @@ async def main():
     application.add_handler(CommandHandler("admin_send", admin_send))
     application.add_handler(CallbackQueryHandler(button))
 
-    bot = application.bot
+    # Initialize the application
+    application.initialize()
 
-    asyncio.create_task(subscription_check_loop(bot, group_id))
-    asyncio.create_task(reminder_check_loop(bot))
+    # Create async tasks for subscription checks and reminders
+    asyncio.create_task(subscription_check_loop(application.bot, group_id))
+    asyncio.create_task(reminder_check_loop(application.bot))
 
-    application.initialize()  # Initialize the application
-    await bot.set_webhook(WEBHOOK_URL)  # Set webhook for bot
+    # Set webhook for the bot
+    await application.bot.set_webhook(WEBHOOK_URL)
 
 if __name__ == '__main__':
+    port = int(os.getenv("PORT", 8000))
+    logging.info(f"Starting server on port {port}")
     asyncio.run(main())
-    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
