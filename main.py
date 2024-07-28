@@ -985,22 +985,21 @@ async def start_application():
     asyncio.create_task(subscription_check_loop(bot, group_id))  # Replace group_id with your group ID
     asyncio.create_task(reminder_check_loop(bot))
 
-    polling_task = asyncio.create_task(application.run_polling())
-    return application, polling_task
+    # Run polling in the same event loop
+    await application.run_polling()
 
 async def main():
-    application, polling_task = await start_application()
-    try:
-        await polling_task
-    except RuntimeError as e:
-        if str(e) != "This Application is already running!":
-            raise
-    finally:
-        # Graceful shutdown
-        await application.stop()
-        await application.shutdown()
+    await start_application()
 
 if __name__ == '__main__':
     # Use nest_asyncio to apply the necessary patches for asyncio event loops
     nest_asyncio.apply()
-    asyncio.run(main())
+    # Check if an event loop is already running
+    loop = asyncio.get_event_loop()
+    if loop.is_running():
+        # If already running, create a task to run the main function
+        asyncio.ensure_future(main())
+    else:
+        # Otherwise, run the main function normally
+        asyncio.run(main())
+
