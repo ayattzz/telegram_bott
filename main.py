@@ -903,7 +903,6 @@ async def reminder_check_loop(bot):
         check_trial_expiration()
         await asyncio.sleep(3600)
 
-
 import os
 import nest_asyncio
 import asyncio
@@ -959,6 +958,7 @@ async def start_application():
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("setlang", set_language))
     application.add_handler(CommandHandler("admin_send", admin_send))
+
     application.add_handler(CallbackQueryHandler(button))
 
     # Start the HTTP server on port specified by the PORT environment variable
