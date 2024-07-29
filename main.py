@@ -941,6 +941,15 @@ async def start_application():
         per_chat=True,
     )
 
+    conversation_handler = ConversationHandler(
+        entry_points=[CommandHandler('help', help_request)],
+        states={
+            HELP_REQUEST: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_help_request)],
+        },
+        fallbacks=[],
+    )
+    application.add_handler(conversation_handler)
+
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("send", send))
     application.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, handle_receipt))
