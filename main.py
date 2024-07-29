@@ -994,12 +994,7 @@ async def main():
 if __name__ == '__main__':
     # Use nest_asyncio to apply the necessary patches for asyncio event loops
     nest_asyncio.apply()
-    # Check if an event loop is already running
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        # If already running, create a task to run the main function
-        asyncio.ensure_future(main())
-    else:
-        # Otherwise, run the main function normally
-        asyncio.run(main())
+    # Run the main function using asyncio
+    asyncio.run(main())
+
 
