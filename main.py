@@ -290,11 +290,7 @@ async def check_and_unban_subscribed_users(bot: Bot, group_id: int):
         user_id = user[0]
         await handle_user_unban(bot, group_id, user_id)
 
-async def subscription_check_loop(bot: Bot, group_id: int):
-    while True:
-        await check_and_ban_unsubscribed_users(bot, group_id)  # Ensure to define this function
-        await check_and_unban_subscribed_users(bot, group_id)
-        await asyncio.sleep(3600)
+
 
 
 def check_trial_expiration():
@@ -895,13 +891,31 @@ async def handle_help_request(update: Update, context: CallbackContext) -> None:
 
 import nest_asyncio
 
+import asyncio
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 async def reminder_check_loop(bot):
     while True:
-        await send_trial_reminders(bot)
-        await send_subscription_reminders(bot)
-        check_subscription_expiration()
-        check_trial_expiration()
+        try:
+            await send_trial_reminders(bot)
+            await send_subscription_reminders(bot)
+            check_subscription_expiration()
+            check_trial_expiration()
+        except Exception as e:
+            logging.error(f"Error in reminder_check_loop: {e}")
         await asyncio.sleep(3600)
+
+async def subscription_check_loop(bot, group_id):
+    while True:
+        try:
+            await check_and_ban_unsubscribed_users(bot, group_id)
+            await check_and_unban_subscribed_users(bot, group_id)
+        except Exception as e:
+            logging.error(f"Error in subscription_check_loop: {e}")
+        await asyncio.sleep(3600)
+
 
 import os
 import nest_asyncio
