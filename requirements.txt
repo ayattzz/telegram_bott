@@ -6,5 +6,7 @@ nest-asyncio==1.5.6
 python-dotenv==0.20.0
 apscheduler==3.8.1
 uvicorn
-aiohttp==3.8.4
+aiohttp==3.7.4.post0
+
+
 
