@@ -28,7 +28,7 @@ load_dotenv()
 
 admin_id_str = os.getenv("ADMINS")
 ADMINS = int(admin_id_str) if admin_id_str else None
-group_id = os.getenv("GROUP_ID")
+group_id = os.getenv("group_id")
 FROM_EMAIL = os.getenv("FROM_EMAIL")
 FROM_PASSWORD = os.getenv("FROM_PASSWORD")
 API_KEY = os.getenv("API_KEY")
@@ -895,7 +895,14 @@ import asyncio
 import logging
 
 logging.basicConfig(level=logging.INFO)
-
+async def subscription_check_loop(bot, group_id):
+    while True:
+        try:
+            await check_and_ban_unsubscribed_users(bot, group_id)
+            await check_and_unban_subscribed_users(bot, group_id)
+        except Exception as e:
+            logging.error(f"Error in subscription_check_loop: {e}")
+        await asyncio.sleep(3600)
 async def reminder_check_loop(bot):
     while True:
         try:
@@ -907,14 +914,7 @@ async def reminder_check_loop(bot):
             logging.error(f"Error in reminder_check_loop: {e}")
         await asyncio.sleep(3600)
 
-async def subscription_check_loop(bot, group_id):
-    while True:
-        try:
-            await check_and_ban_unsubscribed_users(bot, group_id)
-            await check_and_unban_subscribed_users(bot, group_id)
-        except Exception as e:
-            logging.error(f"Error in subscription_check_loop: {e}")
-        await asyncio.sleep(3600)
+
 
 
 import os
