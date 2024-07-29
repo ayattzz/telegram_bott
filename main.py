@@ -1,3 +1,4 @@
+
 import asyncio
 import logging
 import os
@@ -5,11 +6,6 @@ from datetime import datetime, timedelta, date
 import re
 import smtplib
 from email.mime.text import MIMEText
-
-
-
-import uvicorn
-from fastapi import FastAPI ,Request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from deep_translator import GoogleTranslator
@@ -17,20 +13,6 @@ from telegram import Update, Bot, InputFile
 from telegram.error import TelegramError, BadRequest
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, \
     CallbackContext
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-app = FastAPI()
-application = Application.builder().token(BOT_TOKEN).build()
-
-@app.get("/")
-async def root():
-    return {"message": "Bot is running"}
-
-@app.post("/webhook")
-async def webhook(request: Request):
-    update = Update.de_json(await request.json(), application.bot)
-    await application.process_update(update)
-    return {"status": "ok"}
 
 
 
@@ -52,9 +34,10 @@ FROM_PASSWORD = os.getenv("FROM_PASSWORD")
 API_KEY = os.getenv("API_KEY")
 API_URL = os.getenv("API_URL")
 SECRET_KEY = os.getenv("SECRET_KEY")
-
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 EMAIL, PHONE, WAITING_FOR_RECEIPT = range(3)
+
 
 
 user_languages = {}
@@ -411,7 +394,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     welcome_message = (
         "مرحبا بك ، انت على وشك الانخراط في اقوى غرفة التداول في الوطن العربي.\n \n"
         " \nراح ، نخلو تجربتك تتكلم."
-" \n اضغط على الزر Menu ,          "    
+" \n اضغط على الزر Menu ,          "
         "افتح  حساب للحصول على اسبوع تجريبي مجاني.\n"
     )
 
@@ -716,8 +699,6 @@ async def handle_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     return ConversationHandler.END
 
-
-
 async def verify_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
 
@@ -920,7 +901,7 @@ async def reminder_check_loop(bot):
         await send_subscription_reminders(bot)
         check_subscription_expiration()
         check_trial_expiration()
-        await asyncio.sleep(86400)
+        await asyncio.sleep(3600)
 
 
 import os
@@ -931,6 +912,10 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 
 # Apply nest_asyncio
 nest_asyncio.apply()
+
+# Define your handler functions and ConversationHandler states
+# e.g., start, register, email, phone, etc.
+
 
 async def init_app():
     app = web.Application()
@@ -982,23 +967,54 @@ async def start_application():
     asyncio.create_task(subscription_check_loop(bot, group_id))  # Replace group_id with your group ID
     asyncio.create_task(reminder_check_loop(bot))
 
-    # Run polling in the same event loop
-    await application.run_polling()
+    polling_task = asyncio.create_task(application.run_polling())
+    return application, polling_task
 
 async def main():
-    await start_application()
+    application, polling_task = await start_application()
+    try:
+        await polling_task
+    except RuntimeError as e:
+        if str(e) != "This Application is already running!":
+            raise
+    finally:
+        # Graceful shutdown
+        await application.stop()
+        await application.shutdown()
 
 if __name__ == '__main__':
-    # Use nest_asyncio to apply the necessary patches for asyncio event loops
-    nest_asyncio.apply()
-    # Check if an event loop is already running
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        # If already running, create a task to run the main function
-        asyncio.ensure_future(main())
-    else:
-        # Otherwise, run the main function normally
-        asyncio.run(main())
+    asyncio.run(main())
+
+# import requests
+#
+# # Replace 'YOUR_BOT_TOKEN' with your actual bot token
+# BOT_TOKEN = '7351033518:AAFBkj3rwQB3K3ir0rdRxWjKXox__Y38vLA'
+# USER_ID = ('5771780180')  # Replace with the actual Telegram ID of the user
+#
+# # API URL for getChat method
+# url = f'https://api.telegram.org/bot{BOT_TOKEN}/getChat'
+#
+# # Parameters for the request
+# params = {
+#     'chat_id': USER_ID
+# }
+#
+# # Making the request
+# response = requests.get(url, params=params)
+#
+# # Checking the response
+# if response.status_code == 200:
+#     chat_info = response.json()
+#     if chat_info['ok']:
+#         username = chat_info['result'].get('username', None)
+#         if username:
+#             print(f"Username: @{username}")
+#         else:
+#             print("User does not have a username.")
+#     else:
+#         print(f"Failed to get chat info: {chat_info['description']}")
+# else:
+#     print(f"HTTP request failed with status code: {response.status_code}")
 
 
 
