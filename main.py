@@ -28,7 +28,7 @@ load_dotenv()
 
 admin_id_str = os.getenv("ADMINS")
 ADMINS = int(admin_id_str) if admin_id_str else None
-group_id = os.getenv("group_id")
+group_id = os.getenv("GROUP_ID")
 FROM_EMAIL = os.getenv("FROM_EMAIL")
 FROM_PASSWORD = os.getenv("FROM_PASSWORD")
 API_KEY = os.getenv("API_KEY")
@@ -210,6 +210,13 @@ async def check_and_ban_unsubscribed_users(bot: Bot, group_id: int):
             if not subscribed:
                 logger.info(f"Banning user {user_id} from group {group_id}.")
                 await ban_user_from_group(bot, user_id, group_id)
+
+                # Reset the notified status
+                conn = sqlite3.connect('users.db')
+                c = conn.cursor()
+                c.execute("UPDATE users SET notified = 0 WHERE user_id = ?", (user_id,))
+                conn.commit()
+                conn.close()
             else:
                 logger.info(f"User {user_id} is subscribed. No action needed.")
             continue
@@ -222,6 +229,13 @@ async def check_and_ban_unsubscribed_users(bot: Bot, group_id: int):
             if trial_end_date < current_date and not subscribed:
                 logger.info(f"Banning user {user_id} from group {group_id} as their trial has expired and they are not subscribed.")
                 await ban_user_from_group(bot, user_id, group_id)
+
+                # Reset the notified status
+                conn = sqlite3.connect('users.db')
+                c = conn.cursor()
+                c.execute("UPDATE users SET notified = 0 WHERE user_id = ?", (user_id,))
+                conn.commit()
+                conn.close()
             else:
                 logger.info(f"Trial still valid for user {user_id}. No action needed.")
         except ValueError as e:
@@ -282,7 +296,7 @@ async def handle_user_unban(bot: Bot, group_id: int, user_id: int):
 async def check_and_unban_subscribed_users(bot: Bot, group_id: int):
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute("SELECT user_id FROM users WHERE subscribed = 1")
+    c.execute("SELECT user_id FROM users WHERE subscribed = 1 AND notified = 0")
     subscribed_users = c.fetchall()
     conn.close()
 
@@ -290,7 +304,19 @@ async def check_and_unban_subscribed_users(bot: Bot, group_id: int):
         user_id = user[0]
         await handle_user_unban(bot, group_id, user_id)
 
+        # Update the notified status
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute("UPDATE users SET notified = 1 WHERE user_id = ?", (user_id,))
+        conn.commit()
+        conn.close()
 
+
+async def subscription_check_loop(bot: Bot, group_id: int):
+    while True:
+        await check_and_ban_unsubscribed_users(bot, group_id)  # Ensure to define this function
+        await check_and_unban_subscribed_users(bot, group_id)
+        await asyncio.sleep(3600)
 
 
 def check_trial_expiration():
@@ -891,31 +917,13 @@ async def handle_help_request(update: Update, context: CallbackContext) -> None:
 
 import nest_asyncio
 
-import asyncio
-import logging
-
-logging.basicConfig(level=logging.INFO)
-async def subscription_check_loop(bot, group_id):
-    while True:
-        try:
-            await check_and_ban_unsubscribed_users(bot, group_id)
-            await check_and_unban_subscribed_users(bot, group_id)
-        except Exception as e:
-            logging.error(f"Error in subscription_check_loop: {e}")
-        await asyncio.sleep(3600)
 async def reminder_check_loop(bot):
     while True:
-        try:
-            await send_trial_reminders(bot)
-            await send_subscription_reminders(bot)
-            check_subscription_expiration()
-            check_trial_expiration()
-        except Exception as e:
-            logging.error(f"Error in reminder_check_loop: {e}")
+        await send_trial_reminders(bot)
+        await send_subscription_reminders(bot)
+        check_subscription_expiration()
+        check_trial_expiration()
         await asyncio.sleep(3600)
-
-
-
 
 import os
 import nest_asyncio
