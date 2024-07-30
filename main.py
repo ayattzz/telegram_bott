@@ -318,7 +318,6 @@ async def subscription_check_loop(bot: Bot, group_id: int):
         await check_and_unban_subscribed_users(bot, group_id)
         await asyncio.sleep(3600)
 
-
 def check_trial_expiration():
     logger.info("Starting check_trial_expiration function.")
 
@@ -873,46 +872,74 @@ async def admin_send(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             logger.error(f"Failed to send message to user {user[0]}: {e}")
 
 
+# Define states
+GET_PHONE_NUMBER, HANDLE_HELP_REQUEST = range(2)
+
+# Dictionary to store phone numbers temporarily
+user_phone_numbers = {}
 
 
-
-HELP_REQUEST = range(1)
-
-async def help_request(update: Update, context: CallbackContext) -> int:
-    default_message = "Please describe your problem or question."
+async def start_help_request(update: Update, context: CallbackContext) -> int:
     user_id = update.message.from_user.id
     user_lang = user_languages.get(user_id, 'en')
+
+    # Ask for phone number
+    default_message = "Please provide your phone number of your telegram account."
     translated_message = translate_text(default_message, user_lang)
 
     await update.message.reply_text(translated_message)
-    return HELP_REQUEST
+    return GET_PHONE_NUMBER
+
+async def get_phone_number(update: Update, context: CallbackContext) -> int:
+    user_id = update.message.from_user.id
+    phone_number = update.message.text
+
+    # Validate phone number
+    if validate_phone(phone_number):
+        # Store phone number in dictionary
+        user_phone_numbers[user_id] = phone_number
+
+        # Ask for help message
+        default_message = "Now, please describe your problem or question."
+        user_lang = user_languages.get(user_id, 'en')
+        translated_message = translate_text(default_message, user_lang)
+
+        await update.message.reply_text(translated_message)
+        return HANDLE_HELP_REQUEST
+    else:
+        # If phone number is invalid, ask user to provide a valid phone number
+        default_message = " Invalid phone number, enter your telegram account phone number."
+        user_lang = user_languages.get(user_id, 'en')
+        translated_message = translate_text(default_message, user_lang)
+
+        await update.message.reply_text(translated_message)
+        return GET_PHONE_NUMBER
 
 
-conn = sqlite3.connect('users.db')
-c = conn.cursor()
-
-
-async def handle_help_request(update: Update, context: CallbackContext) -> None:
+async def handle_help_request(update: Update, context: CallbackContext) -> int:
     user_id = update.message.from_user.id
     user_message = update.message.text
 
-
-    c.execute("SELECT phone FROM users WHERE user_id = ?", (user_id,))
-    result = c.fetchone()
-    phone_number = result[0] if result else "Not provided"
+    # Retrieve phone number from dictionary
+    phone_number = user_phone_numbers.get(user_id, "Not provided")
     if phone_number.startswith('0'):
         phone_number = '+213' + phone_number[1:]
 
-
+    # Prepare and send support message
     support_message = f"User ID: {user_id}\nPhone Number: {phone_number}\nMessage: {user_message}"
     await context.bot.send_message(chat_id='1695689621', text=support_message)
 
-
+    # Send acknowledgment to user
     default_acknowledgement = "Thank you for reaching out! Our support team will respond to you via your Telegram account."
     user_lang = user_languages.get(user_id, 'en')
     translated_acknowledgement = translate_text(default_acknowledgement, user_lang)
 
     await update.message.reply_text(translated_acknowledgement)
+
+    # Clean up by removing the phone number from the dictionary
+    user_phone_numbers.pop(user_id, None)
+
+    return ConversationHandler.END
 
 
 import nest_asyncio
@@ -962,14 +989,15 @@ async def start_application():
         per_chat=True,
     )
 
-    conversation_handler = ConversationHandler(
-        entry_points=[CommandHandler('help', help_request)],
+    help_request_handler = ConversationHandler(
+        entry_points=[CommandHandler('help', start_help_request)],
         states={
-            HELP_REQUEST: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_help_request)],
+            GET_PHONE_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_phone_number)],
+            HANDLE_HELP_REQUEST: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_help_request)],
         },
         fallbacks=[],
     )
-    application.add_handler(conversation_handler)
+    application.add_handler(help_request_handler)
 
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("send", send))

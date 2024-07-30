@@ -71,6 +71,23 @@ import sqlite3
 # # Call the function to test
 # check_db()
 #
+import sqlite3
+
+# # Connect to your SQLite database
+# conn = sqlite3.connect('users.db')
+# c = conn.cursor()
+#
+# # Execute the ALTER TABLE statement to add the new column
+# try:
+#     c.execute("ALTER TABLE users ADD COLUMN notified INTEGER DEFAULT 0")
+#     conn.commit()
+#     print("Column 'notified' added successfully.")
+# except sqlite3.OperationalError as e:
+#     print(f"Error adding column: {e}")
+#
+# # Close the database connection
+# conn.close()
+
 
 def check_db():
     conn = sqlite3.connect('users.db')
@@ -82,5 +99,3 @@ def check_db():
         print(row)
 
 check_db()
-
-
