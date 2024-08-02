@@ -537,9 +537,8 @@ async def pay(update: Update, context: CallbackContext) -> None:
     user_id = update.callback_query.from_user.id if update.callback_query else update.message.from_user.id
     user_lang = user_languages.get(user_id, 'en')
 
-
     try:
-        conn = sqlite3.connect('users.db')
+        conn = sqlite3.connect('user.db')
         c = conn.cursor()
         c.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
         user = c.fetchone()
@@ -552,46 +551,45 @@ async def pay(update: Update, context: CallbackContext) -> None:
         return
 
     if user:
-        # Create a payment request
         headers = {
             "x-api-key": API_KEY,
             "Content-Type": "application/json"
         }
 
-        payload = {
-            "price_amount": 37.0,
-            "price_currency": "usdttrc20",
-            "pay_currency": "usdttrc20",
-            "order_id": user_id,
-            "order_description": "Payment for user registration",
-            "ipn_callback_url": "http://192.168.1.9:8000/webhook"
-        }
+        payment_links = []
 
-        try:
-            response = requests.post(API_URL, headers=headers, json=payload)
-            response.raise_for_status()  # Raise an exception for HTTP errors
-            payment_data = response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"API request error: {e}")
-            message = "Failed to create payment. Please try again later."
-            translated_message = translate_text(message, user_lang)
-            await update.callback_query.message.reply_text(
-                translated_message) if update.callback_query else await update.message.reply_text(translated_message)
-            return
+        for currency in ["usdterc20", "usdttrc20"]:
+            payload = {
+                "price_amount": 37.0,
+                "price_currency": currency,
+                "pay_currency": currency,
+                "order_id": user_id,
+                "order_description": "Payment for user registration",
+                "ipn_callback_url": "http://192.168.1.9:8000/webhook"
+            }
 
-        payment_url = payment_data.get("invoice_url")
+            try:
+                response = requests.post(API_URL, headers=headers, json=payload)
+                response.raise_for_status()  # Raise an exception for HTTP errors
+                payment_data = response.json()
+                payment_url = payment_data.get("invoice_url")
 
-        if payment_url:
-            message = f"Please complete your payment using the following link: {payment_url}"
+                if payment_url:
+                    payment_links.append(f"{currency.upper()} payment link: {payment_url}")
+                else:
+                    logger.error(f"No payment URL generated for currency: {currency}")
+            except requests.exceptions.RequestException as e:
+                logger.error(f"API request error for currency {currency}: {e}")
+
+        if payment_links:
+            message = "\n\n".join(payment_links)
         else:
-            message = "Failed to create payment. Please try again later."
+            message = "Failed to create payment links. Please try again later."
     else:
         message = "User not found in the database."
 
     translated_message = translate_text(message, user_lang)
-    await update.callback_query.message.reply_text(
-        translated_message) if update.callback_query else await update.message.reply_text(translated_message)
-
+    await update.callback_query.message.reply_text(translated_message) if update.callback_query else await update.message.reply_text(translated_message)
 
 
 
