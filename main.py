@@ -538,7 +538,7 @@ async def pay(update: Update, context: CallbackContext) -> None:
     user_lang = user_languages.get(user_id, 'en')
 
     try:
-        conn = sqlite3.connect('user.db')
+        conn = sqlite3.connect('users.db')
         c = conn.cursor()
         c.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
         user = c.fetchone()
