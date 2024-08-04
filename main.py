@@ -44,7 +44,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-ADMINS = os.getenv("ADMINS")
+admin_id_str = os.getenv("ADMINS")
+ADMINS = int(admin_id_str) if admin_id_str else None
 group_id = os.getenv("GROUP_ID")
 FROM_EMAIL = os.getenv("FROM_EMAIL")
 FROM_PASSWORD = os.getenv("FROM_PASSWORD")
@@ -669,15 +670,12 @@ async def handle_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 os.makedirs(receipts_dir)
             photo_path = os.path.join(receipts_dir, f'{update.message.from_user.id}.jpg')
 
-
             await photo_file.download_to_drive(photo_path)
-
 
             message = "Thank you! Your receipt has been received. Check your email in the next few days for confirmation."
             translated_message = translate_text(message, user_languages[user_id])
             await update.message.reply_text(translated_message)
             logger.info(f"Receipt from user {update.message.from_user.id} saved to {photo_path}")
-
 
             conn = db_connect()
             c = conn.cursor()
@@ -691,16 +689,18 @@ async def handle_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 email = "Unknown"
                 phone = "Unknown"
 
-
-            for admin_id in ADMINS:
+            if ADMINS is not None:
                 try:
                     with open(photo_path, 'rb') as photo:
                         caption = (f"User ID: {update.message.from_user.id}\n"
                                    f"Email: {email}\n"
                                    f"Phone: {phone}")
-                        await context.bot.send_photo(chat_id=admin_id, photo=photo, caption=caption)
+                        response = await context.bot.send_photo(chat_id=ADMINS, photo=photo, caption=caption)
+                        logger.info(f"Sent photo to admin {ADMINS}. Response: {response}")
                 except Exception as e:
-                    logger.error(f"Failed to send photo to admin {admin_id}: {e}")
+                    logger.error(f"Failed to send photo to admin {ADMINS}: {e}")
+            else:
+                logger.error("No admin ID found.")
 
         else:
             logger.warning("No photo found in the message.")
@@ -715,6 +715,7 @@ async def handle_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text(translated_message)
 
     return ConversationHandler.END
+
 
 async def verify_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
@@ -913,7 +914,6 @@ async def reminder_check_loop(bot):
         await asyncio.sleep(3600)
 
 
-
 import os
 import nest_asyncio
 import asyncio
@@ -925,7 +925,6 @@ nest_asyncio.apply()
 
 # Define your handler functions and ConversationHandler states
 # e.g., start, register, email, phone, etc.
-
 
 async def init_app():
     app = web.Application()
@@ -993,4 +992,6 @@ async def main():
         await application.shutdown()
 
 if __name__ == '__main__':
+    # Use nest_asyncio to apply the necessary patches for asyncio event loops
+    nest_asyncio.apply()
     asyncio.run(main())
