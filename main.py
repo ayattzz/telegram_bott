@@ -985,6 +985,7 @@ c = conn.cursor()
 
 YOUR_ADMIN_ID = 1695689621  # Replace with your admin user ID
 
+
 async def check_db(update: Update, context):
     user_id = update.message.from_user.id
     if user_id == YOUR_ADMIN_ID:
@@ -994,14 +995,28 @@ async def check_db(update: Update, context):
 
             if data:
                 formatted_data = '\n'.join([str(row) for row in data])
-                await update.message.reply_text(f"Database Content:\n{formatted_data}")
+
+                # Check if the message is too long
+                if len(formatted_data) > 4096:
+                    # Write the data to a file
+                    with open("db_output.txt", "w") as file:
+                        file.write(formatted_data)
+
+                    # Send the file as a document
+                    with open("db_output.txt", "rb") as file:
+                        await update.message.reply_document(document=InputFile(file))
+
+                    # Optionally, remove the file after sending
+                    os.remove("db_output.txt")
+                else:
+                    # Send the data directly as a message
+                    await update.message.reply_text(f"Database Content:\n{formatted_data}")
             else:
                 await update.message.reply_text("No data found in the table.")
         except Exception as e:
             await update.message.reply_text(f"An error occurred: {str(e)}")
     else:
         await update.message.reply_text("You're not authorized to perform this action.")
-
 async def init_app():
     app = web.Application()
     app.router.add_get('/', lambda request: web.Response(text="Bot is running"))
