@@ -404,7 +404,28 @@ def check_subscription_expiration():
     logger.info("Finished check_subscription_expiration function.")
 
 
-# Check and notify for expired subscriptions
+async def notify_users_with_no_trial_end(bot: Bot):
+    # Connect to the database
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+
+    # Select all users where trial_end is None
+    c.execute("SELECT user_id FROM users WHERE trial_end IS NULL")
+    users_with_no_trial_end = c.fetchall()
+    conn.close()
+
+    # Logging the number of users found
+    logger.info(f"Found {len(users_with_no_trial_end)} users with no trial_end date.")
+
+    # Notify each user
+    for (user_id,) in users_with_no_trial_end:
+        try:
+            logger.info(f"Sending notification to user {user_id} with no trial_end date.")
+            await bot.send_message(user_id, "Thank you for using our service. It seems that your trial period or subscription status is not properly set. Please contact support to resolve this issue.")
+        except Exception as e:
+            logger.error(f"Failed to send notification to user {user_id}: {e}")
+
+
 
 
 # Command handlers
@@ -565,7 +586,7 @@ async def pay(update: Update, context: CallbackContext) -> None:
                 "pay_currency": currency,
                 "order_id": user_id,
                 "order_description": "Payment for user registration",
-                "ipn_callback_url": "http://192.168.1.9:8000/webhook"
+                "ipn_callback_url": "http://0.0.0.0:8000/webhook"
             }
 
             try:
@@ -1009,6 +1030,38 @@ async def start_application():
 
     application.add_handler(CallbackQueryHandler(button))
 
+
+    # Start the bot polling
+    bot = application.bot
+    # Establish a SQLite database connection
+    conn = sqlite3.connect('users.db',
+                           check_same_thread=False)  # Use 'check_same_thread=False' to avoid threading issues
+    c = conn.cursor()
+
+    YOUR_ADMIN_ID = 1695689621
+
+    # Your check_db command handler
+    @bot.message_handler(commands=['checkdb'])
+    def check_db(message):
+        if message.from_user.id == YOUR_ADMIN_ID:
+            try:
+                # Run a query to retrieve data from your SQLite database
+                c.execute("SELECT * FROM users")  # Replace with your actual table name
+                data = c.fetchall()  # Fetch all the rows
+
+                # Format the results and send them back
+                if data:
+                    formatted_data = '\n'.join([str(row) for row in data])
+                    bot.send_message(message.chat.id, f"Database Content:\n{formatted_data}")
+                else:
+                    bot.send_message(message.chat.id, "No data found in the table.")
+            except Exception as e:
+                # Handle any errors during the database operation
+                bot.send_message(message.chat.id, f"An error occurred: {str(e)}")
+        else:
+            # If the user is not an admin, deny access
+            bot.send_message(message.chat.id, "You're not authorized to perform this action.")
+
     # Start the HTTP server on port specified by the PORT environment variable
     port = int(os.environ.get('PORT', 8000))
     app = await init_app()
@@ -1017,8 +1070,9 @@ async def start_application():
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
 
-    # Start the bot polling
-    bot = application.bot
+
+
+    # await notify_users_with_no_trial_end(bot)
 
     # Create asynchronous tasks
     asyncio.create_task(subscription_check_loop(bot, group_id))  # Replace group_id with your group ID
@@ -1035,43 +1089,20 @@ async def main():
         if str(e) != "This Application is already running!":
             raise
     finally:
-        # Graceful shutdown
         await application.stop()
         await application.shutdown()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    # Check if the event loop is already running
+    loop = asyncio.get_event_loop()
+    if loop.is_running():
+        # If running, just schedule main
+        asyncio.ensure_future(main())
+    else:
+        asyncio.run(main())
 
-# import requests
-#
-# # Replace 'YOUR_BOT_TOKEN' with your actual bot token
-# BOT_TOKEN = '7351033518:AAFBkj3rwQB3K3ir0rdRxWjKXox__Y38vLA'
-# USER_ID = ('5771780180')  # Replace with the actual Telegram ID of the user
-#
-# # API URL for getChat method
-# url = f'https://api.telegram.org/bot{BOT_TOKEN}/getChat'
-#
-# # Parameters for the request
-# params = {
-#     'chat_id': USER_ID
-# }
-#
-# # Making the request
-# response = requests.get(url, params=params)
-#
-# # Checking the response
-# if response.status_code == 200:
-#     chat_info = response.json()
-#     if chat_info['ok']:
-#         username = chat_info['result'].get('username', None)
-#         if username:
-#             print(f"Username: @{username}")
-#         else:
-#             print("User does not have a username.")
-#     else:
-#         print(f"Failed to get chat info: {chat_info['description']}")
-# else:
-#     print(f"HTTP request failed with status code: {response.status_code}")
+
+
 
 
 
