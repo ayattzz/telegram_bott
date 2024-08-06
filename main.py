@@ -980,9 +980,27 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 # Apply nest_asyncio
 nest_asyncio.apply()
 
-# Define your handler functions and ConversationHandler states
-# e.g., start, register, email, phone, etc.
+conn = sqlite3.connect('users.db', check_same_thread=False)
+c = conn.cursor()
 
+YOUR_ADMIN_ID = 1695689621  # Replace with your admin user ID
+
+async def check_db(update: Update, context):
+    user_id = update.message.from_user.id
+    if user_id == YOUR_ADMIN_ID:
+        try:
+            c.execute("SELECT * FROM users")  # Replace with your actual table name
+            data = c.fetchall()
+
+            if data:
+                formatted_data = '\n'.join([str(row) for row in data])
+                await update.message.reply_text(f"Database Content:\n{formatted_data}")
+            else:
+                await update.message.reply_text("No data found in the table.")
+        except Exception as e:
+            await update.message.reply_text(f"An error occurred: {str(e)}")
+    else:
+        await update.message.reply_text("You're not authorized to perform this action.")
 
 async def init_app():
     app = web.Application()
@@ -1027,40 +1045,12 @@ async def start_application():
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("setlang", set_language))
     application.add_handler(CommandHandler("admin_send", admin_send))
+    application.add_handler(CommandHandler("checkdb", check_db))
 
     application.add_handler(CallbackQueryHandler(button))
 
 
-    # Start the bot polling
-    bot = application.bot
-    # Establish a SQLite database connection
-    conn = sqlite3.connect('users.db',
-                           check_same_thread=False)  # Use 'check_same_thread=False' to avoid threading issues
-    c = conn.cursor()
 
-    YOUR_ADMIN_ID = 1695689621
-
-    # Your check_db command handler
-    @bot.message_handler(commands=['checkdb'])
-    def check_db(message):
-        if message.from_user.id == YOUR_ADMIN_ID:
-            try:
-                # Run a query to retrieve data from your SQLite database
-                c.execute("SELECT * FROM users")  # Replace with your actual table name
-                data = c.fetchall()  # Fetch all the rows
-
-                # Format the results and send them back
-                if data:
-                    formatted_data = '\n'.join([str(row) for row in data])
-                    bot.send_message(message.chat.id, f"Database Content:\n{formatted_data}")
-                else:
-                    bot.send_message(message.chat.id, "No data found in the table.")
-            except Exception as e:
-                # Handle any errors during the database operation
-                bot.send_message(message.chat.id, f"An error occurred: {str(e)}")
-        else:
-            # If the user is not an admin, deny access
-            bot.send_message(message.chat.id, "You're not authorized to perform this action.")
 
     # Start the HTTP server on port specified by the PORT environment variable
     port = int(os.environ.get('PORT', 8000))
@@ -1069,6 +1059,9 @@ async def start_application():
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
+
+    # Start the bot polling
+    bot = application.bot
 
 
 
