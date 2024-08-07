@@ -1025,6 +1025,29 @@ async def dic(update: Update, context: CallbackContext):
     print(f"Current working directory: {current_directory}")  # Log to console
     await update.message.reply_text(f"Current working directory: {current_directory}")
 
+
+from telegram import Update, InputFile
+from telegram.ext import CallbackContext, CommandHandler, Application
+import os
+
+
+# Define the function to send the .db file
+async def send_db_file(update: Update, context: CallbackContext):
+    user_id = update.message.from_user.id
+    if user_id == YOUR_ADMIN_ID:  # Replace YOUR_ADMIN_ID with the admin's user ID
+        try:
+            # Correctly specify the path to your .db file
+            db_path = '/opt/render/project/src/users.db'  # Adjust this path if needed
+
+            # Send the .db file
+            with open(db_path, 'rb') as file:
+                await update.message.reply_document(document=InputFile(file, filename='users.db'))
+        except Exception as e:
+            await update.message.reply_text(f"An error occurred: {str(e)}")
+    else:
+        await update.message.reply_text("You're not authorized to perform this action.")
+
+
 async def init_app():
     app = web.Application()
     app.router.add_get('/', lambda request: web.Response(text="Bot is running"))
@@ -1070,6 +1093,8 @@ async def start_application():
     application.add_handler(CommandHandler("setlang", set_language))
     application.add_handler(CommandHandler("admin_send", admin_send))
     application.add_handler(CommandHandler("checkdb", check_db))
+    send_db_handler = CommandHandler('send_db', send_db_file)
+    application.add_handler(send_db_handler)
 
     application.add_handler(CallbackQueryHandler(button))
 
