@@ -1021,7 +1021,9 @@ import os
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 async def dic(update: Update, context: CallbackContext):
-    await update.message.reply_text(f"Current working directory: {os.getcwd()}")
+    current_directory = os.getcwd()
+    print(f"Current working directory: {current_directory}")  # Log to console
+    await update.message.reply_text(f"Current working directory: {current_directory}")
 
 async def init_app():
     app = web.Application()
