@@ -1017,9 +1017,12 @@ async def check_db(update: Update, context):
             await update.message.reply_text(f"An error occurred: {str(e)}")
     else:
         await update.message.reply_text("You're not authorized to perform this action.")
+import os
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
+async def dic(update: Update, context: CallbackContext):
+    await update.message.reply_text(f"Current working directory: {os.getcwd()}")
 
-def dic(update: Update, context: CallbackContext):
-    update.message.reply_text(f"Current working directory: {os.getcwd()}")
 async def init_app():
     app = web.Application()
     app.router.add_get('/', lambda request: web.Response(text="Bot is running"))
