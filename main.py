@@ -1033,11 +1033,18 @@ import os
 
 # Define the function to send the .db file
 async def send_db_file(update: Update, context: CallbackContext):
+    print(f"Received command from user: {update.message.from_user.id}")
+
     user_id = update.message.from_user.id
     if user_id == YOUR_ADMIN_ID:  # Replace YOUR_ADMIN_ID with the admin's user ID
         try:
             # Correctly specify the path to your .db file
             db_path = '/opt/render/project/src/users.db'  # Adjust this path if needed
+
+            # Check if the file exists
+            if not os.path.exists(db_path):
+                await update.message.reply_text("The database file does not exist.")
+                return
 
             # Send the .db file
             with open(db_path, 'rb') as file:
