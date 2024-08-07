@@ -983,14 +983,14 @@ nest_asyncio.apply()
 conn = sqlite3.connect('users.db', check_same_thread=False)
 c = conn.cursor()
 
-YOUR_ADMIN_ID = 1695689621  # Replace with your admin user ID
+YOUR_ADMIN_ID = 1695689621
 
 
 async def check_db(update: Update, context):
     user_id = update.message.from_user.id
     if user_id == YOUR_ADMIN_ID:
         try:
-            c.execute("SELECT * FROM users")  # Replace with your actual table name
+            c.execute("SELECT * FROM users")
             data = c.fetchall()
 
             if data:
@@ -1017,6 +1017,9 @@ async def check_db(update: Update, context):
             await update.message.reply_text(f"An error occurred: {str(e)}")
     else:
         await update.message.reply_text("You're not authorized to perform this action.")
+
+def dic(update: Update, context: CallbackContext):
+    update.message.reply_text(f"Current working directory: {os.getcwd()}")
 async def init_app():
     app = web.Application()
     app.router.add_get('/', lambda request: web.Response(text="Bot is running"))
@@ -1052,6 +1055,7 @@ async def start_application():
     application.add_handler(help_request_handler)
 
     application.add_handler(CommandHandler("status", status))
+    application.add_handler(CommandHandler("dic", dic))
     application.add_handler(CommandHandler("send", send))
     application.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, handle_receipt))
     application.add_handler(registration_conv_handler)
